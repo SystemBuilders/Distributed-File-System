@@ -19,6 +19,15 @@ The lock server implements two main functions:
 * A point to note here is that we should not let lock "release" for objects where the lock isnt acquired on. This might be a sign of malicious clients trying attacks to get access to objects in the DFS.
 ## Implementation
 
+### Data structure for maintaining locks
+
+```
+type SafeLockMap struct {
+    LockMap map[string]{}interface 
+    Mutex   sync.Mutex 
+}
+```
+
 ### Acquire
 
 ```
@@ -46,3 +55,15 @@ func release(obj, lockToken) err {
 
 * The locks acquired by the client must be an authentication for the file system to verify that this is a legitimate client that has acquired a lock and no other application is already using it and I can safely provide access to this client.
 * The files or "objects" must be a standard way of storage in the distributed file system.
+* The lockserver is only accessed by the DFS. No client has direct access to the lockserver. 
+* DFS's abstraction to this API must be something like this:
+
+```
+// on incoming client access to file `F`
+lock,err := acquireLock(F)
+if err != nil {
+    // grant access to file
+}else {
+    // report / wait
+}
+```
