@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/suraj44/Distributed-File-System/internal/lockserver"
+	"github.com/GoPlayAndFun/Distributed-File-System/internal/lockserver"
 )
 
 func main() {
