@@ -1,4 +1,4 @@
-module github.com/suraj44/Distributed-File-System
+module github.com/GoPlayAndFun/Distributed-File-System
 
 go 1.13
 
