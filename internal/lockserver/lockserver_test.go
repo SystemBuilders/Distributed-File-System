@@ -9,7 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_SingleLockAndRelease(t *testing.T) {
+func TestSingleLockAndRelease(t *testing.T) {
+	go StartServer()
 	assert := assert.New(t)
 	client, err := rpc.DialHTTP("tcp", "localhost:55550")
 	if err != nil {
