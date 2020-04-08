@@ -21,6 +21,7 @@ func TestSingleLockAndRelease(t *testing.T) {
 	y = 3.4
 
 	err = client.Call("Service.Acquire", "1", &y)
+
 	if err != nil {
 		assert.Fail(fmt.Sprintf("Failed to acquire lock: %v", err))
 	}
