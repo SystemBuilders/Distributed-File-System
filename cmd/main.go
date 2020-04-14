@@ -1,7 +1,12 @@
 package main
 
-import "github.com/GoPlayAndFun/Distributed-File-System/internal/lockserver"
+import (
+	"os"
+
+	"github.com/GoPlayAndFun/Distributed-File-System/internal/lockserver"
+)
 
 func main() {
-	lockserver.StartServer()
+	shutdownSignal := make(chan os.Signal, 1)
+	lockserver.StartServer(shutdownSignal)
 }
