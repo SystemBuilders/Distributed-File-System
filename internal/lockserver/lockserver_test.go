@@ -65,11 +65,20 @@ func TestSingleLockAndRelease1(t *testing.T) {
 	if err != nil {
 		assert.Fail(fmt.Sprintf("Failed to acquire lock: %v", err))
 	}
+	result := client.Call("Service.CheckAcquire", "1", &y)
+	if result != nil {
+		assert.Fail(fmt.Sprintf("Lock was not acquired"))
+	}
 
 	err = client.Call("Service.Release", "1", &y)
 
 	if err != nil {
 		assert.Fail(fmt.Sprintf("Failed to release lock: %v", err))
+	}
+
+	result = client.Call("Service.CheckRelease", "1", &y)
+	if result != nil {
+		assert.Fail(fmt.Sprintf("Lock was not released"))
 	}
 
 	err = client.Call("Service.Acquire", "1", &y)
@@ -77,9 +86,20 @@ func TestSingleLockAndRelease1(t *testing.T) {
 	if err != nil {
 		assert.Fail(fmt.Sprintf("Failed to acquire lock: %v", err))
 	}
+
+	result = client.Call("Service.CheckAcquire", "1", &y)
+	if result != nil {
+		assert.Fail(fmt.Sprintf("Lock was not acquired"))
+	}
+
 	err = client.Call("Service.Release", "1", &y)
 	if err != nil {
 		assert.Fail(fmt.Sprintf("Failed to release lock: %v", err))
+	}
+
+	result = client.Call("Service.CheckRelease", "1", &y)
+	if result != nil {
+		assert.Fail(fmt.Sprintf("Lock was not released"))
 	}
 
 	t.Logf("PASSED")
@@ -103,7 +123,7 @@ func TestMultipleLockAndRelease(t *testing.T) {
 	}
 
 	result := client.Call("Service.CheckAcquire", "1", &y)
-	if not result {
+	if result != nil {
 		assert.Fail(fmt.Sprintf("Lock was not acquired"))
 	}
 
@@ -112,31 +132,59 @@ func TestMultipleLockAndRelease(t *testing.T) {
 		assert.Fail(fmt.Sprintf("Failed to release lock: %v", err))
 	}
 
+	result = client.Call("Service.CheckAcquire", "2", &y)
+	if result != nil {
+		assert.Fail(fmt.Sprintf("Lock was not acquired"))
+	}
+
 	err = client.Call("Service.Release", "2", &y)
 	if err != nil {
 		assert.Fail(fmt.Sprintf("Failed to release lock: %v", err))
+	}
+	result = client.Call("Service.CheckRelease", "2", &y)
+	if result != nil {
+		assert.Fail(fmt.Sprintf("Lock was not released"))
 	}
 
 	err = client.Call("Service.Release", "1", &y)
 	if err != nil {
 		assert.Fail(fmt.Sprintf("Failed to release lock: %v", err))
 	}
+	result = client.Call("Service.CheckRelease", "1", &y)
+	if result != nil {
+		assert.Fail(fmt.Sprintf("Lock was not released"))
+	}
 
 }
 
-
 func TestConcurrentRoutinesAcquiringSameLock(t *testing.T) {
-
-	client, err := rpc.DialHTTP("tcp", "localhost:55550")
-	
-	func commonTest(tid uint8) {
-		t.Logf("client %d acquire a release a", tid)
-		err = client.Call("Service.Release", "1", &y)
-		if err != nil {
-			assert.Fail(fmt.Sprintf("Failed to release lock: %v", err))
-		}
-		t.Logf("client %d acquire done")
-		result := client.Call("Service.CheckAcquire", "1", &y)
-		
+	for i := 0; i < 5; i++ {
+		go func(t *testing.T, tid int) {
+			assert := assert.New(t)
+			client, err := rpc.DialHTTP("tcp", "localhost:55550")
+			var y float32
+			y = 3.4
+			t.Logf("client %d acquire a release a", tid)
+			err = client.Call("Service.Release", "1", &y)
+			if err != nil {
+				assert.Fail(fmt.Sprintf("Failed to release lock: %v", err))
+			}
+			t.Logf("client %d acquire done", tid)
+			result := client.Call("Service.CheckAcquire", "1", &y)
+			if result != nil {
+				assert.Fail(fmt.Sprintf("Lock was not acquired"))
+			}
+			time.Sleep(1)
+			t.Logf("client %d release", tid)
+			err = client.Call("Service.Release", "1", &y)
+			if err != nil {
+				assert.Fail(fmt.Sprintf("Failed to release lock: %v", err))
+			}
+			result = client.Call("Service.CheckRelease", "1", &y)
+			if result != nil {
+				assert.Fail(fmt.Sprintf("Lock was not released"))
+			}
+			t.Logf("client %d release done", tid)
+		}(t, i)
 	}
 }
