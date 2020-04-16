@@ -3,7 +3,6 @@ package lockserver
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -38,6 +37,17 @@ func (s *Service) HealthCheck(ip string, counter *int) error {
 	return nil
 }
 
+// CheckAcquire returns true if the file is acquired
+func (s *Service) CheckAcquire(fileID string) bool {
+	lockMap.Mutex.Lock()
+	if lockMap.LockMap[fileID] {
+		lockMap.Mutex.Unlock()
+		return true
+	}
+	lockMap.Mutex.Unlock()
+	return false
+}
+
 // Acquire function lets a client acquire a lock on an object.
 func (s *Service) Acquire(fileID string, counter *float32) error {
 	lockMap.Mutex.Lock()
@@ -49,6 +59,17 @@ func (s *Service) Acquire(fileID string, counter *float32) error {
 	lockMap.Mutex.Unlock()
 	log.Printf("File: %v locked\n", fileID)
 	return nil
+}
+
+// CheckRelease returns true if the file is released
+func (s *Service) CheckRelease(fileID string) bool {
+	lockMap.Mutex.Lock()
+	if lockMap.LockMap[fileID] {
+		lockMap.Mutex.Unlock()
+		return false
+	}
+	lockMap.Mutex.Unlock()
+	return true
 }
 
 // Release lets a client to release a lock on an object.
@@ -65,10 +86,10 @@ func (s *Service) Release(fileID string, counter *float32) error {
 }
 
 // StartServer starts the rpc server for lockserver
-func StartServer() {
+func StartServer(shutDownSignal chan os.Signal) {
 	service := new(Service)
-	port := flag.Int("port", 55550, "service port")
-	ip := flag.String("ip", "0.0.0.0", "service ip")
+	port := 55550   //flag.Int("port", 55550, "service port")
+	ip := "0.0.0.0" //flag.String("ip", "0.0.0.0", "service ip")
 
 	rpcServer := rpc.NewServer()
 	err := rpcServer.Register(service)
@@ -77,22 +98,22 @@ func StartServer() {
 	}
 
 	server := &http.Server{
-		Addr:    *ip + ":" + strconv.Itoa(*port),
+		Addr:    ip + ":" + strconv.Itoa(port),
 		Handler: rpcServer,
 	}
 
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt)
+	// stop := make(chan os.Signal, 1)
+	signal.Notify(shutDownSignal, os.Interrupt)
 
 	go func() {
 		err := server.ListenAndServe()
-		if err != nil {
+		if err != nil && err != http.ErrServerClosed {
 			log.Fatal("listen error:", err)
 		}
 	}()
 
-	<-stop
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	<-shutDownSignal
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
 	server.Shutdown(ctx)
 	cancel()
 }
