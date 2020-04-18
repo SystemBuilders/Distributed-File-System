@@ -162,9 +162,18 @@ func TestMultipleLockAndRelease(t *testing.T) {
 		assert.Fail(fmt.Sprintf("Lock was not released"))
 	}
 
+	shutdownSignal <- os.Kill
+	timer1 = time.NewTimer(5 * time.Millisecond)
+	<-timer1.C
 }
 
 func TestConcurrentRoutinesAcquiringSameLock(t *testing.T) {
+	shutdownSignal := make(chan os.Signal, 1)
+	go StartServer(shutdownSignal)
+
+	timer1 := time.NewTimer(5 * time.Millisecond)
+	<-timer1.C
+
 	for i := 0; i < 5; i++ {
 		go func(t *testing.T, tid int) {
 			assert := assert.New(t)
@@ -194,4 +203,7 @@ func TestConcurrentRoutinesAcquiringSameLock(t *testing.T) {
 			t.Logf("client %d release done", tid)
 		}(t, i)
 	}
+	shutdownSignal <- os.Kill
+	timer1 = time.NewTimer(5 * time.Millisecond)
+	<-timer1.C
 }
