@@ -174,12 +174,13 @@ func TestConcurrentRoutinesAcquiringSameLock(t *testing.T) {
 	timer1 := time.NewTimer(5 * time.Millisecond)
 	<-timer1.C
 
+	client, err := rpc.DialHTTP("tcp", "localhost:55550")
+	var y float32
+	y = 3.4
+
 	for i := 0; i < 5; i++ {
 		go func(t *testing.T, tid int) {
 			assert := assert.New(t)
-			client, err := rpc.DialHTTP("tcp", "localhost:55550")
-			var y float32
-			y = 3.4
 			t.Logf("client %d acquire a release a", tid)
 			err = client.Call("Service.Release", "1", &y)
 			if err != nil {
