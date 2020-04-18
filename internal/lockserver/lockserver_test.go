@@ -102,12 +102,19 @@ func TestSingleLockAndRelease1(t *testing.T) {
 		assert.Fail(fmt.Sprintf("Lock was not released"))
 	}
 
-	t.Logf("PASSED")
-
+	shutdownSignal <- os.Kill
+	timer1 = time.NewTimer(5 * time.Millisecond)
+	<-timer1.C
 }
 
 func TestMultipleLockAndRelease(t *testing.T) {
 	t.Logf("acquire a acquire b release b release a\n")
+	shutdownSignal := make(chan os.Signal, 1)
+	go StartServer(shutdownSignal)
+
+	timer1 := time.NewTimer(5 * time.Millisecond)
+	<-timer1.C
+
 	assert := assert.New(t)
 	client, err := rpc.DialHTTP("tcp", "localhost:55550")
 
