@@ -19,6 +19,23 @@ The lock server implements two main functions:
 * A point to note here is that we should not let lock "release" for objects where the lock isnt acquired on. This might be a sign of malicious clients trying attacks to get access to objects in the DFS.
 ## Implementation
 
+### The lock service
+To make this lock server idea scalable and add multiple implementations of the lock service, we design the following:
+
+```
+type Data interface {
+    ID() string
+    ...
+}
+
+type LockService interface {
+    Insert(Data) error
+    Delete(Data) error
+}
+```
+
+The data to be inserted is named `Data` for lack of a better name.
+
 ### Data structure for maintaining locks
 
 ```
