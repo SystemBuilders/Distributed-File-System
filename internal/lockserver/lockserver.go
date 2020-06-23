@@ -38,7 +38,7 @@ func (s *Service) HealthCheck(ip string, counter *int) error {
 }
 
 // CheckAcquire returns nil if the file is acquired
-func (s *Service) CheckAcquire(fileID string) error {
+func (s *Service) CheckAcquire(fileID string, counter *float32) error {
 	lockMap.Mutex.Lock()
 	if lockMap.LockMap[fileID] {
 		lockMap.Mutex.Unlock()
@@ -62,7 +62,7 @@ func (s *Service) Acquire(fileID string, counter *float32) error {
 }
 
 // CheckRelease returns nil if the file is released
-func (s *Service) CheckRelease(fileID string) error {
+func (s *Service) CheckRelease(fileID string, counter *float32) error {
 	lockMap.Mutex.Lock()
 	if lockMap.LockMap[fileID] {
 		lockMap.Mutex.Unlock()
@@ -74,6 +74,7 @@ func (s *Service) CheckRelease(fileID string) error {
 
 // Release lets a client to release a lock on an object.
 func (s *Service) Release(fileID string, counter *float32) error {
+	fmt.Println("WE")
 	lockMap.Mutex.Lock()
 	if lockMap.LockMap[fileID] {
 		delete(lockMap.LockMap, fileID)
