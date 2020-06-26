@@ -11,12 +11,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/GoPlayAndFun/Distributed-File-System/internal/lockservice"
 	"github.com/GoPlayAndFun/Distributed-File-System/internal/routing"
 	"github.com/gorilla/mux"
 )
 
 // Start begins the node's operation as a http server.
-func Start() error {
+func Start(ls *lockservice.SimpleLockService) error {
 	// TODO: should be obtained from the config file
 	IP := "127.0.0.1"
 	port := "61111"
@@ -27,7 +28,7 @@ func Start() error {
 
 	router := mux.NewRouter()
 
-	router = routing.SetupRouting(router)
+	router = routing.SetupRouting(ls, router)
 
 	server := &http.Server{
 		Handler: router,

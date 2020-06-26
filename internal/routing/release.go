@@ -1,46 +1,47 @@
 package routing
 
 import (
-	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 
 	"github.com/GoPlayAndFun/Distributed-File-System/internal/lockservice"
 )
 
-func release(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Reached release")
+func release(w http.ResponseWriter, r *http.Request, ls *lockservice.SimpleLockService) {
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("Bad request in routing/groceries.go/GetItemsFromCart")
-		log.Println(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err = lockservice.Release(string(body))
+	desc := &lockservice.SimpleDescriptor{
+		FileID: string(body),
+	}
+
+	err = ls.Release(desc)
 
 	if err != nil {
-		fmt.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func checkRelease(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Reached check release")
+func checkReleased(w http.ResponseWriter, r *http.Request, ls *lockservice.SimpleLockService) {
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("Bad request in routing/groceries.go/GetItemsFromCart")
-		log.Println(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err = lockservice.CheckRelease(string(body))
-
-	if err != nil {
-		fmt.Println(err)
+	desc := &lockservice.SimpleDescriptor{
+		FileID: string(body),
 	}
+
+	if ls.CheckReleased(desc) {
+		w.Write([]byte("checkRelease success"))
+		return
+	}
+	w.Write([]byte("checkRelease failure"))
+
 }
