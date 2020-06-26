@@ -1,72 +1,26 @@
 package lockservice
 
-import (
-	"errors"
-	"log"
-	"sync"
-)
-
-// SafeLockMap is the lockserver's data structure
-type SafeLockMap struct {
-	LockMap map[string]bool
-	Mutex   sync.Mutex
+// LockService describes a lock service component that enables
+// maintaining a set of locks. This service is a standalone component
+// that can be implemented on any server component, distributed or not.
+type LockService interface {
+	// Acquire allows the service to set a lock on the given descriptors.
+	// An error is generated if the same isn't possible for any reason,
+	// including already existing locks on the descriptor.
+	Acquire(Descriptors) error
+	// Release allows the service to release the lock on the given descriptors.
+	// An error is generated if the same isn't possible for any reason,
+	// including releasing locks on non-acquired descriptors.
+	Release(Descriptors) error
+	// CheckAcquire checks whether a lock has been acquired on the given descriptor.
+	// The function returns true if the lock has been acquired on the component.
+	CheckAcquired(Descriptors) bool
+	// CheckRelease checks whether a lock has been released (or not acquired) on the
+	// given component. Returns true if there are no locks on the descriptor.
+	CheckReleased(Descriptors) bool
 }
 
-// Service is the service exposed by this server to the clients.
-type Service int
-
-var lockMap = newSafelockMap()
-
-func newSafelockMap() (lockMap SafeLockMap) {
-	lockMap = SafeLockMap{}
-	lockMap.LockMap = make(map[string]bool)
-	return
-}
-
-// CheckAcquire returns nil if the file is acquired
-func CheckAcquire(fileID string) error {
-	lockMap.Mutex.Lock()
-	if lockMap.LockMap[fileID] {
-		lockMap.Mutex.Unlock()
-		return nil
-	}
-	lockMap.Mutex.Unlock()
-	return errors.New("Lock hasn't been acquired")
-}
-
-// Acquire function lets a client acquire a lock on an object.
-func Acquire(fileID string) error {
-	lockMap.Mutex.Lock()
-	if lockMap.LockMap[fileID] {
-		lockMap.Mutex.Unlock()
-		return errors.New("Can't access file, locked by other user")
-	}
-	lockMap.LockMap[fileID] = true
-	lockMap.Mutex.Unlock()
-	log.Printf("File: %v locked\n", fileID)
-	return nil
-}
-
-// CheckRelease returns nil if the file is released
-func CheckRelease(fileID string) error {
-	lockMap.Mutex.Lock()
-	if lockMap.LockMap[fileID] {
-		lockMap.Mutex.Unlock()
-		return nil
-	}
-	lockMap.Mutex.Unlock()
-	return errors.New("Lock wasn't acquired on file")
-}
-
-// Release lets a client to release a lock on an object.
-func Release(fileID string) error {
-	lockMap.Mutex.Lock()
-	if lockMap.LockMap[fileID] {
-		delete(lockMap.LockMap, fileID)
-		log.Printf("File: %v's lock released\n", fileID)
-		lockMap.Mutex.Unlock()
-		return nil
-	}
-	lockMap.Mutex.Unlock()
-	return errors.New("Can't release lock on file, wasn't locked before")
+// Descriptors describe the type of data that a lock acquiring component must describe.
+type Descriptors interface {
+	ID() string
 }
